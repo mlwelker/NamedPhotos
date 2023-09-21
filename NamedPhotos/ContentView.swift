@@ -6,12 +6,14 @@
 // done! detail screen should show a larger version of the picture
 // done! show the photo in the list next to each name
 // done! Detect when a new photo is imported, and immediately ask the user to name the photo.
+// done! when you’re viewing a picture, show a map where user was when picture was added
 
 // TODO Save that name and photo somewhere safe.
 // TODO Decide on a way to save all this data.
-// TODO when you’re viewing a picture, show a map with a pin marking where user was when picture was added
+// TODO add a pin to the map
 
-
+import CoreLocation
+import MapKit
 import SwiftUI
 
 struct ContentView: View {
@@ -22,6 +24,10 @@ struct ContentView: View {
     
     @State private var showingImagePicker = false
     @State private var showingNameImage = false
+    
+    @State private var mapRegion = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 50, longitude: 0), span: MKCoordinateSpan(latitudeDelta: 25, longitudeDelta: 25))
+    
+    let locationFetcher = LocationFetcher()
     
     var body: some View {
         if !showingNameImage {
@@ -43,7 +49,14 @@ struct ContentView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                         }
+                                        
                                         Text(photo.name)
+                                        
+                                        if let location = photo.location {
+                                            Map(coordinateRegion: .constant(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude), span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))), interactionModes: [])
+                                            
+                                            Text("Location: \(location.latitude), \(location.longitude)")
+                                        }
                                     }
                                 }
                             }
@@ -55,6 +68,7 @@ struct ContentView: View {
                     Spacer()
                     
                     Button {
+                        locationFetcher.start()
                         showingImagePicker = true
                     } label: {
                         Image(systemName: "plus")
@@ -82,7 +96,7 @@ struct ContentView: View {
             
             HStack {
                 Button("Save") {
-                    namedPhotos.append(NamedPhoto(id: UUID(), name: imageName, image: inputImage))
+                    namedPhotos.append(NamedPhoto(id: UUID(), name: imageName, image: inputImage, location: locationFetcher.lastKnownLocation))
                     inputImage = nil
                     imageName = ""
                     showingNameImage = false
